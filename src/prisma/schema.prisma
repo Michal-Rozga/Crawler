@@ -1,0 +1,36 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  status      String
+  startTime   DateTime
+  sport       String
+  competition String
+  scores      Score[]
+  competitors Competitor[]
+  removed     Boolean  @default(false) // Track removed events
+}
+
+model Score {
+  id      String @id @default(uuid())
+  type    String
+  home    String
+  away    String
+  eventId String
+  event   Event   @relation(fields: [eventId], references: [id])
+}
+
+model Competitor {
+  id       String @id @default(uuid())
+  type     String
+  name     String
+  eventId  String
+  event    Event   @relation(fields: [eventId], references: [id])
+}
