@@ -9,7 +9,7 @@ export interface EventData {
                 away: string;
             };
         };
-        startTime: Date;
+        startTime: string;
         sport: string;
         competitors: {
             HOME: { type: string; name: string };
