@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { updateEvents, getFormattedState } from "../controllers/eventController.js";
 import fetch from 'node-fetch';
-import { API_URL } from "../utils/apiClient.js";
+import { API_URL } from "../services/fetchService.js";
 
 export async function stateRoutes(fastify: FastifyInstance) {
   fastify.get('/state', async (_, reply) => {

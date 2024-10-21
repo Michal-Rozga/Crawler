@@ -22,7 +22,8 @@ services:
       - PORT=3000
 
   app:
-    build: .
+    image: node:14
+    container_name: app
     command: npm run dev
     ports:
       - "3001:3001"
@@ -31,6 +32,9 @@ services:
     depends_on:
       - postgres
       - api_simulation
+    volumes:
+      - .:/usr/src/app
+    working_dir: /usr/src/app
 
 volumes:
   pgdata:

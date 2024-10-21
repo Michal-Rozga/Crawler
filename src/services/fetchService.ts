@@ -1,6 +1,3 @@
-import fetch from 'node-fetch';
-import { API_URL } from '../utils/apiClient.js';
-
 export async function fetchEventData() {
   const response = await fetch(`${API_URL}/api/state`);
   if (!response.ok) {
@@ -16,3 +13,5 @@ export async function fetchMappings() {
   }
   return await response.json();
 }
+
+export const API_URL = process.env.API_URL || 'http://localhost:3000';
