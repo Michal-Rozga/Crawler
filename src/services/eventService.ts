@@ -3,66 +3,66 @@ import { EventData } from '../types/index.js';
 
 const prisma = new PrismaClient();
 
-export async function upsertEvent(event: EventData[keyof EventData]) {
+export async function upsertEvent(event: EventData) {
   const { id, status, startTime, sport, competition, scores, competitors } = event;
   
   await prisma.event.upsert({
-    where: { id },
-    update: {
-      status,
-      startTime: new Date(startTime),
-      sport,
-      competition,
-      removed: false,
-      scores: {
-        deleteMany: {},
-        create: {
-          type: scores.CURRENT.type,
-          home: scores.CURRENT.home,
-          away: scores.CURRENT.away,
-        }
-      },
-      competitors: {
-        deleteMany: {},
-        create: [
-          {
-            type: competitors.HOME.type,
-            name: competitors.HOME.name,
+      where: { id },
+      update: {
+          status,
+          startTime: new Date(startTime),
+          sport,
+          competition,
+          removed: false,
+          scores: {
+              deleteMany: {},
+              create: {
+                  type: scores.CURRENT.type,
+                  home: scores.CURRENT.home,
+                  away: scores.CURRENT.away,
+              }
           },
-          {
-            type: competitors.AWAY.type,
-            name: competitors.AWAY.name,
+          competitors: {
+              deleteMany: {},
+              create: [
+                  {
+                      type: competitors.HOME.type,
+                      name: competitors.HOME.name,
+                  },
+                  {
+                      type: competitors.AWAY.type,
+                      name: competitors.AWAY.name,
+                  }
+              ]
           }
-        ]
-      }
-    },
-    create: {
-      id,
-      status,
-      startTime: new Date(startTime),
-      sport,
-      competition,
-      removed: false,
-      scores: {
-        create: {
-          type: scores.CURRENT.type,
-          home: scores.CURRENT.home,
-          away: scores.CURRENT.away,
-        }
       },
-      competitors: {
-        create: [
-          {
-            type: competitors.HOME.type,
-            name: competitors.HOME.name,
+      create: {
+          id,
+          status,
+          startTime: new Date(startTime),
+          sport,
+          competition,
+          removed: false,
+          scores: {
+              create: {
+                  type: scores.CURRENT.type,
+                  home: scores.CURRENT.home,
+                  away: scores.CURRENT.away,
+              }
           },
-          {
-            type: competitors.AWAY.type,
-            name: competitors.AWAY.name,
+          competitors: {
+              create: [
+                  {
+                      type: competitors.HOME.type,
+                      name: competitors.HOME.name,
+                  },
+                  {
+                      type: competitors.AWAY.type,
+                      name: competitors.AWAY.name,
+                  }
+              ]
           }
-        ]
       }
-    }
   });
 }
 
