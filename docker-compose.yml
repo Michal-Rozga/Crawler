@@ -24,14 +24,11 @@ services:
   app:
     image: michalrozga-crawler
     build: .
-    command: npm run start
     ports:
       - "3001:3001"
     depends_on:
       - postgres
       - api_simulation
-    volumes:
-      - ./src:/usr/src/app/src
 
 volumes:
   pgdata:

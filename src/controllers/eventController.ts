@@ -3,14 +3,6 @@ import { upsertEvent, markRemovedEvents, getAllEvents } from '../services/eventS
 import { EventData, Score } from '../types/index.js';
 import { FastifyReply, FastifyRequest } from 'fastify';
 
-function parseScores(type: string, home: string, away: string): Score {
-    return {
-        type: type.trim(),
-        home: home,
-        away: away,
-    };
-}
-
 export async function updateEvents() {
     const eventDataArray = await fetchEventData();
     const existingIds = eventDataArray.map(event => event.id);
@@ -30,8 +22,6 @@ export async function getFormattedState() {
             ? event.scores[event.scores.length - 1] 
             : { home: "0", away: "0", type: "UNKNOWN" };
 
-        const currentScores = parseScores(currentScore.type, currentScore.home, currentScore.away);
-
         const homeCompetitor = event.competitors.find(c => c.type === 'HOME') || { name: 'Unknown Home', type: 'UNKNOWN' };
         const awayCompetitor = event.competitors.find(c => c.type === 'AWAY') || { name: 'Unknown Away', type: 'UNKNOWN' };
 
@@ -39,7 +29,7 @@ export async function getFormattedState() {
             id: event.id,
             status: event.status,
             scores: {
-                CURRENT: currentScores,
+                CURRENT: currentScore,
             },
             startTime: event.startTime.toISOString(),
             sport: event.sport,
