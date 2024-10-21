@@ -18,8 +18,7 @@ export interface EventData {
     startTime: string;
     sport: string;
     competitors: {
-        HOME: Competitor;
-        AWAY: Competitor;
+        [key: string]: Competitor;
     };
     competition: string;
 }

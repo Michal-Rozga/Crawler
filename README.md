@@ -47,6 +47,13 @@ Move the exisitng .env.sample file and adjust accordingly.
 docker-compose up
 ```
 
+### 5. Apply database migration
+```
+docker compose exec app npx prisma migrate dev --schema=./src/prisma/schema.prisma
+```
+
+Please make sure you run the command from step 5, otherwise the application will not work properly.
+
 ## Additional information
 
 ### Prisma Studio

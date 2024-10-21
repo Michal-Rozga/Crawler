@@ -2,6 +2,7 @@ import { fetchEventData, fetchMappings } from "../services/fetchService.js";
 import { upsertEvent, markRemovedEvents, getAllEvents } from "../services/eventService.js";
 import { EventData, Score } from "../types/index.js";
 import { FastifyReply, FastifyRequest } from "fastify";
+import { Competitor } from "@prisma/client";
 
 let mappings: Record<string, string> = {};
 
@@ -72,14 +73,7 @@ export async function getFormattedState() {
   const events = await getAllEvents();
 
   return events.reduce((acc: Record<string, EventData>, event) => {
-    const homeCompetitor = event.competitors.find((c) => c.type === "HOME") || {
-      name: "Unknown Home",
-      type: "UNKNOWN",
-    };
-    const awayCompetitor = event.competitors.find((c) => c.type === "AWAY") || {
-      name: "Unknown Away",
-      type: "UNKNOWN",
-    };
+    
 
     acc[event.id] = {
       id: event.id,
@@ -90,16 +84,10 @@ export async function getFormattedState() {
       }, {}),
       startTime: event.startTime.toISOString(),
       sport: event.sport,
-      competitors: {
-        HOME: {
-          type: homeCompetitor.type,
-          name: homeCompetitor.name,
-        },
-        AWAY: {
-          type: awayCompetitor.type,
-          name: awayCompetitor.name,
-        },
-      },
+      competitors: event.competitors.reduce((acc: EventData['competitors'], competitor: Competitor) => {
+        acc[competitor.type] = competitor;
+        return acc;
+      }, {}),
       competition: event.competition,
     };
     return acc;
