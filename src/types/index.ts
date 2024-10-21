@@ -1,20 +1,29 @@
+export interface Score {
+    type: string;
+    home: string;
+    away: string;
+}
+
+export interface Competitor {
+    type: string;
+    name: string;
+}
+
 export interface EventData {
-    [key: string]: {
-        id: string;
-        status: string;
-        scores: {
-            CURRENT: {
-                type: string;
-                home: string;
-                away: string;
-            };
-        };
-        startTime: string;
-        sport: string;
-        competitors: {
-            HOME: { type: string; name: string };
-            AWAY: { type: string; name: string };
-        };
-        competition: string;
+    id: string;
+    status: string;
+    scores: {
+        CURRENT: Score;
     };
+    startTime: string;
+    sport: string;
+    competitors: {
+        HOME: Competitor;
+        AWAY: Competitor;
+    };
+    competition: string;
+}
+
+export interface MappingsData {
+    mappings: Record<string, string>;
 }
