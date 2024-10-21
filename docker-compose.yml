@@ -24,11 +24,16 @@ services:
   app:
     image: michalrozga-crawler
     build: .
+    env_file:
+        - .env
+    environment:
+        API_URL: http://api_simulation:3000
+        DATABASE_URL: postgres://${DB_USERNAME}:${DB_PASSWORD}@postgres-db:5432/${DB_NAME}
     ports:
-      - "3001:3001"
+        - "3001:3001"
     depends_on:
-      - postgres
-      - api_simulation
+        - postgres
+        - api_simulation
 
 volumes:
   pgdata:
