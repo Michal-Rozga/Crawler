@@ -1,46 +1,58 @@
 import { fetchEventData } from '../services/fetchService.js';
 import { upsertEvent, markRemovedEvents, getAllEvents } from '../services/eventService.js';
 import { EventData } from '../types/index.js';
+import { FastifyReply, FastifyRequest } from 'fastify';
 
 export async function updateEvents() {
-  const eventData = await fetchEventData() as EventData;
-  const existingIds = Object.keys(eventData);
+    const eventDataArray = await fetchEventData();
+    const existingIds = eventDataArray.map(event => event.id);
 
-  for (const id of existingIds) {
-    await upsertEvent(eventData[id]);
-  }
+    for (const event of eventDataArray) {
+        await upsertEvent(event);
+    }
 
-  await markRemovedEvents(existingIds);
+    await markRemovedEvents(existingIds);
 }
 
 export async function getFormattedState() {
-  const events = await getAllEvents();
+    const events = await getAllEvents();
 
-  return events.reduce((acc: Record<string, EventData[keyof EventData]>, event) => {
-    acc[event.id] = {
-      id: event.id,
-      status: event.status,
-      scores: {
-        CURRENT: {
-          type: event.scores[0].type,
-          home: event.scores[0].home,
-          away: event.scores[0].away,
-        },
-      },
-      startTime: event.startTime.toISOString(),
-      sport: event.sport,
-      competitors: {
-        HOME: {
-          type: event.competitors[0].type,
-          name: event.competitors[0].name,
-        },
-        AWAY: {
-          type: event.competitors[1].type,
-          name: event.competitors[1].name,
-        },
-      },
-      competition: event.competition,
-    };
-    return acc;
-  }, {});
+    return events.reduce((acc: Record<string, EventData>, event) => {
+        acc[event.id] = {
+            id: event.id,
+            status: event.status,
+            scores: {
+                CURRENT: {
+                    type: event.scores.CURRENT.type,
+                    home: event.scores.CURRENT.home,
+                    away: event.scores.CURRENT.away,
+                },
+            },
+            startTime: event.startTime.toISOString(),
+            sport: event.sport,
+            competitors: {
+                HOME: {
+                    type: event.competitors.HOME.type,
+                    name: event.competitors.HOME.name,
+                },
+                AWAY: {
+                    type: event.competitors.AWAY.type,
+                    name: event.competitors.AWAY.name,
+                },
+            },
+            competition: event.competition,
+        };
+        return acc;
+    }, {} as Record<string, EventData>);
 }
+
+export const stateHandler = async (request: FastifyRequest, reply: FastifyReply) => {
+  try {
+      await updateEvents();
+      const formattedState = await getFormattedState();
+      reply.send(formattedState);
+  } catch (error) {
+      console.error('Error handling state:', error);
+      reply.status(500).send({ error: 'Failed to retrieve state' });
+  }
+};
