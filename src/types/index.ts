@@ -13,7 +13,7 @@ export interface EventData {
     id: string;
     status: string;
     scores: {
-        CURRENT: Score;
+        [key: string]: Score;
     };
     startTime: string;
     sport: string;

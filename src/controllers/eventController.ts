@@ -1,61 +1,118 @@
-import { fetchEventData } from '../services/fetchService.js';
-import { upsertEvent, markRemovedEvents, getAllEvents } from '../services/eventService.js';
-import { EventData, Score } from '../types/index.js';
-import { FastifyReply, FastifyRequest } from 'fastify';
+import { fetchEventData, fetchMappings } from "../services/fetchService.js";
+import { upsertEvent, markRemovedEvents, getAllEvents } from "../services/eventService.js";
+import { EventData, Score } from "../types/index.js";
+import { FastifyReply, FastifyRequest } from "fastify";
+
+let mappings: Record<string, string> = {};
 
 export async function updateEvents() {
-    const eventDataArray = await fetchEventData();
-    const existingIds = eventDataArray.map(event => event.id);
+  mappings = await fetchMappings();
+  const eventData = await fetchEventData();
+  const existingIds = new Set<string>();
 
-    for (const event of eventDataArray) {
-        await upsertEvent(event);
-    }
+  for (const eventString of eventData) {
+    const fields = eventString.split(",");
+    const [
+      eventId,
+      sportId,
+      competitionId,
+      startTime,
+      homeCompetitorId,
+      awayCompetitorId,
+      eventStatusId,
+      scoresString,
+    ] = fields;
 
-    await markRemovedEvents(existingIds);
+    const event: EventData = {
+      id: eventId,
+      sport: mappings[sportId],
+      competition: mappings[competitionId],
+      startTime: new Date(parseInt(startTime)).toISOString(),
+      competitors: {
+        HOME: {
+          type: homeCompetitorId,
+          name: mappings[homeCompetitorId] ?? "Unknown",
+        },
+        AWAY: {
+          type: awayCompetitorId,
+          name: mappings[awayCompetitorId] ?? "Unknown",
+        },
+      },
+      scores: parseScores(scoresString),
+      status: mappings[eventStatusId],
+    };
+
+    await upsertEvent(event);
+
+    existingIds.add(eventId);
+  }
+
+  await markRemovedEvents(Array.from(existingIds));
+}
+
+function parseScores(scoresString: string): { [key: string]: Score } {
+  const scores: { [key: string]: Score } = {};
+  if (!scoresString) return scores;
+
+  const periods = scoresString.split("|");
+  periods.forEach((period) => {
+    const [periodIdWithType, score] = period.split("@");
+    const [homeScore, awayScore] = score.split(":");
+    const periodType = mappings[periodIdWithType] || periodIdWithType;
+    scores[periodType] = {
+      type: periodType,
+      home: homeScore,
+      away: awayScore,
+    };
+  });
+  return scores;
 }
 
 export async function getFormattedState() {
-    const events = await getAllEvents();
+  const events = await getAllEvents();
 
-    return events.reduce((acc: Record<string, EventData>, event) => {
-        const currentScore = event.scores.length > 0 
-            ? event.scores[event.scores.length - 1] 
-            : { home: "0", away: "0", type: "UNKNOWN" };
+  return events.reduce((acc: Record<string, EventData>, event) => {
+    const homeCompetitor = event.competitors.find((c) => c.type === "HOME") || {
+      name: "Unknown Home",
+      type: "UNKNOWN",
+    };
+    const awayCompetitor = event.competitors.find((c) => c.type === "AWAY") || {
+      name: "Unknown Away",
+      type: "UNKNOWN",
+    };
 
-        const homeCompetitor = event.competitors.find(c => c.type === 'HOME') || { name: 'Unknown Home', type: 'UNKNOWN' };
-        const awayCompetitor = event.competitors.find(c => c.type === 'AWAY') || { name: 'Unknown Away', type: 'UNKNOWN' };
-
-        acc[event.id] = {
-            id: event.id,
-            status: event.status,
-            scores: {
-                CURRENT: currentScore,
-            },
-            startTime: event.startTime.toISOString(),
-            sport: event.sport,
-            competitors: {
-                HOME: {
-                    type: homeCompetitor.type,
-                    name: homeCompetitor.name,
-                },
-                AWAY: {
-                    type: awayCompetitor.type,
-                    name: awayCompetitor.name,
-                },
-            },
-            competition: event.competition,
-        };
+    acc[event.id] = {
+      id: event.id,
+      status: event.status,
+      scores: event.scores.reduce((acc: Record<string, Score>, score: Score) => {
+        acc[score.type] = score;
         return acc;
-    }, {} as Record<string, EventData>);
+      }, {}),
+      startTime: event.startTime.toISOString(),
+      sport: event.sport,
+      competitors: {
+        HOME: {
+          type: homeCompetitor.type,
+          name: homeCompetitor.name,
+        },
+        AWAY: {
+          type: awayCompetitor.type,
+          name: awayCompetitor.name,
+        },
+      },
+      competition: event.competition,
+    };
+    return acc;
+  }, {} as Record<string, EventData>);
 }
 
 export const stateHandler = async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-        await updateEvents();
-        const formattedState = await getFormattedState();
-        reply.send(formattedState);
-    } catch (error) {
-        console.error('Error handling state:', error);
-        reply.status(500).send({ error: 'Failed to retrieve state' });
-    }
+  try {
+    await updateEvents();
+    const formattedState = await getFormattedState();
+    reply.send(formattedState);
+  } catch (error) {
+    console.error("Error handling state:", error);
+    reply.status(500).send({ error: "Failed to retrieve state" });
+  }
 };
